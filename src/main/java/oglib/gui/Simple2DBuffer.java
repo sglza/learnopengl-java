@@ -175,29 +175,7 @@ public class Simple2DBuffer {
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
     }
 
-    public static void drawDDA(int x1, int y1, int x2, int y2) {
-        // calculate dx & dy
-        int dx = x2 - x1;
-        int dy = y2 - y1;
-
-        // calculate steps required for generating pixels
-        int steps = Math.abs(dx) > Math.abs(dy) ? Math.abs(dx) : Math.abs(dy);
-
-        // calculate increment in x & y for each steps
-        float Xinc = dx / (float) steps;
-        float Yinc = dy / (float) steps;
-
-        // Put pixel for each step
-        float x = x1;
-        float y = y1;
-        for (int i = 0; i <= steps; i++) {
-            // set(x, y, 255, 255, 255);
-            x += Xinc; // increment in x at each step
-            y += Yinc; // increment in y at each step
-        }
-    }
-
-    public static void drawLine(int x1, int y1, int x2, int y2) {
+    public static void myDrawLine(int x1, int y1, int x2, int y2) {
 
         // var width must be equal to the width of the screen size
         var width = 299;
@@ -302,7 +280,7 @@ public class Simple2DBuffer {
         }
     }
 
-    public static void DDA(int x1, int y1, int x2, int y2) {
+    public static void drawLine(int x1, int y1, int x2, int y2) {
         // calculate dx & dy
         int dx = x2 - x1;
         int dy = y2 - y1;

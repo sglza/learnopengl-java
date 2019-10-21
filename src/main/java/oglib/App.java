@@ -60,9 +60,9 @@ public class App {
             // Simple2DBuffer.drawLine(150, 150, 0, 299); // 15
             // Simple2DBuffer.drawLine(150, 150, 70, 299); // 16
 
-            Simple2DBuffer.DDA(150, 0, 151, 299);
-
+            Simple2DBuffer.drawLine(150, 0, 151, 299);
             // Simple2DBuffer.DDA(0, 0, 299, 299);
+
             // Simple2DBuffer.circle(150, 150, 0);
             // Simple2DBuffer.drawLine(151, 0, 150, 299);
             // Simple2DBuffer.drawLine(250, 250, 350, 0);

@@ -1,15 +1,37 @@
 package oglib.gui;
 
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
+import static com.google.common.base.Preconditions.checkArgument;
+import static org.lwjgl.opengl.GL11.GL_FLOAT;
+import static org.lwjgl.opengl.GL11.GL_LINEAR;
+import static org.lwjgl.opengl.GL11.GL_REPEAT;
+import static org.lwjgl.opengl.GL11.GL_RGB;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MAG_FILTER;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MIN_FILTER;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_WRAP_S;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_WRAP_T;
+import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
+import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL11.glDrawElements;
+import static org.lwjgl.opengl.GL11.glGenTextures;
+import static org.lwjgl.opengl.GL11.glTexImage2D;
+import static org.lwjgl.opengl.GL11.glTexParameteri;
+import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
+import static org.lwjgl.opengl.GL15.glBindBuffer;
+import static org.lwjgl.opengl.GL15.glBufferData;
+import static org.lwjgl.opengl.GL15.glGenBuffers;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
+import static org.lwjgl.opengl.GL30.glBindVertexArray;
+import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 
 import oglib.components.Color;
-
-import static com.google.common.base.Preconditions.*;
 
 public class Simple2DBuffer {
 
@@ -26,12 +48,12 @@ public class Simple2DBuffer {
     final private int vbo;
     final private int ebo;
     final private int textureId;
-    final private int width;
+    private static int width; // was final and static
     final private int height;
     final private ByteBuffer screenBuffer;
-    final private byte[] screen;
+    private static byte[] screen; // was final
     final private byte[] blankScreen;
-    private boolean updated = false;
+    private static boolean updated = false; // added static
     final private static int posLocation = 0;
     final private static int colorLocation = 1;
     final private static int uvLocation = 2;
@@ -110,7 +132,7 @@ public class Simple2DBuffer {
         updated = true;
     }
 
-    public void set(int x, int y, int red, int green, int blue) {
+    public static void set(int x, int y, int red, int green, int blue) {
         checkArgument(red >= 0 && red <= 255, "Red channel must have values between 0 and 255");
         checkArgument(green >= 0 && green <= 255, "Green channel must have values between 0 and 255");
         checkArgument(blue >= 0 && blue <= 255, "Blue channel must have values between 0 and 255");
@@ -147,9 +169,191 @@ public class Simple2DBuffer {
         if (updated) {
             screenBuffer.clear();
             screenBuffer.put(screen).flip();
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,  GL_UNSIGNED_BYTE, screenBuffer);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, screenBuffer);
             updated = false;
         }
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+    }
+
+    public static void drawDDA(int x1, int y1, int x2, int y2) {
+        // calculate dx & dy
+        int dx = x2 - x1;
+        int dy = y2 - y1;
+
+        // calculate steps required for generating pixels
+        int steps = Math.abs(dx) > Math.abs(dy) ? Math.abs(dx) : Math.abs(dy);
+
+        // calculate increment in x & y for each steps
+        float Xinc = dx / (float) steps;
+        float Yinc = dy / (float) steps;
+
+        // Put pixel for each step
+        float x = x1;
+        float y = y1;
+        for (int i = 0; i <= steps; i++) {
+            // set(x, y, 255, 255, 255);
+            x += Xinc; // increment in x at each step
+            y += Yinc; // increment in y at each step
+        }
+    }
+
+    public static void drawLine(int x1, int y1, int x2, int y2) {
+
+        // var width must be equal to the width of the screen size
+        var width = 299;
+        int m_new;
+        int slope_error_new;
+
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+        float slope = dy / dx;
+
+        if ((x1 > width) || (x2 > width)) {
+            System.out.println("invalid line");
+        } else {
+
+            if (x1 > x2) {
+                // To graph from right to left:
+                // switch p1 & p2 with each other and graph normally
+                var tempX = x2;
+                x2 = x1;
+                x1 = tempX;
+
+                var tempY = y2;
+                y2 = y1;
+                y1 = tempY;
+
+            }
+
+            if (slope >= 0 && slope <= 1) {
+                // System.out.println("Slope >= 0 && <= 1");
+                // When the slope is
+                m_new = 2 * (y2 - y1);
+                slope_error_new = m_new - (x2 - x1);
+                for (int x = x1, y = y1; x <= x2; x++) {
+                    // System.out.print("(" +x + "," + y + ")\n");
+                    set(x, y, 255, 255, 255);
+                    // Add slope to increment angle formed
+                    slope_error_new += m_new;
+                    // System.out.println(slope_error_new);
+                    // Slope error reached limit, time to
+                    // increment 'Y' and update slope error.
+                    if (slope_error_new >= 0) {
+                        y++;
+                        slope_error_new -= 2 * (x2 - x1);
+                        // System.out.println(slope_error_new);
+                    }
+                }
+            } else if (slope > 1) {
+                // System.out.println("Slope > 1");
+                m_new = 2 * (x2 - x1); // 500
+                slope_error_new = m_new - (y2 - y1); // 450
+                for (int x = x1, y = y1; y <= y2; y++) {
+                    // System.out.print("(" +x + "," + y + ")\n");
+                    set(x, y, 255, 255, 255);
+                    // Add slope to increment angle formed
+                    slope_error_new += m_new;
+                    // System.out.println(slope_error_new);
+                    // Slope error reached limit, time to
+                    // increment 'Y' and update slope error.
+                    if (slope_error_new >= 0) {
+                        x++;
+                        slope_error_new -= 2 * (y2 - y1);
+                        // System.out.println(slope_error_new);
+                    }
+                }
+            } else if (slope < 0 && slope >= -1) {
+                // System.out.println("Slope < 0 && >= -1");
+                m_new = -1 * (2 * (y2 - y1));
+                slope_error_new = m_new - (x2 - x1);
+                for (int x = x1, y = y1; x <= x2; x++) {
+                    // System.out.print("(" +x + "," + y + ")\n");
+                    set(x, y, 255, 255, 255);
+                    // Add slope to increment angle formed
+                    slope_error_new += m_new;
+                    // System.out.println(slope_error_new);
+                    // Slope error reached limit, time to
+                    // increment 'Y' and update slope error.
+                    if (slope_error_new >= 0) {
+                        y--;
+                        slope_error_new -= 2 * (x2 - x1);
+                        // System.out.println(slope_error_new);
+                    }
+                }
+            } else if (slope < -1) {
+                // System.out.println("Slope < -1");
+                m_new = -1 * (2 * (x2 - x1)); // 500
+                slope_error_new = m_new - (y2 - y1); // 450
+                for (int x = x1, y = y1; y >= y2; y--) {
+                    // System.out.print("(" +x + "," + y + ")\n");
+                    set(x, y, 255, 255, 255);
+                    // Add slope to increment angle formed
+                    slope_error_new += m_new;
+                    // System.out.println(slope_error_new);
+                    // Slope error reached limit, time to
+                    // increment 'Y' and update slope error.
+                    if (slope_error_new <= 0) {
+                        x++;
+                        slope_error_new -= 2 * (y2 - y1);
+                        // System.out.println(slope_error_new);
+                    }
+                }
+            }
+        }
+    }
+
+    public static void DDA(int x1, int y1, int x2, int y2) {
+        // calculate dx & dy
+        int dx = x2 - x1;
+        int dy = y2 - y1;
+
+        // calculate steps required for generating pixels
+        int steps = Math.abs(dx) > Math.abs(dy) ? Math.abs(dx) : Math.abs(dy);
+
+        // calculate increment in x & y for each steps
+        float Xinc = dx / (float) steps;
+        float Yinc = dy / (float) steps;
+
+        // Put pixel for each step
+        float X = x1;
+        float Y = y1;
+        for (int i = 0; i <= steps; i++) {
+            set(Math.round(X), Math.round(Y), 255, 255, 255); // put pixel at (X,Y)
+            X += Xinc; // increment in x at each step
+            Y += Yinc; // increment in y at each step
+        }
+    }
+
+    public static void drawCircle(int xc, int yc, int x, int y) {
+        set(xc + x, yc + y, 255, 255, 255);
+        set(xc - x, yc + y, 255, 255, 255);
+        set(xc + x, yc - y, 255, 255, 255);
+        set(xc - x, yc - y, 255, 255, 255);
+        set(xc + y, yc + x, 255, 255, 255);
+        set(xc - y, yc + x, 255, 255, 255);
+        set(xc + y, yc - x, 255, 255, 255);
+        set(xc - y, yc - x, 255, 255, 255);
+    }
+
+    public static void circle(int xc, int yc, int r) {
+        var x = 0;
+        var y = r;
+        var d = 3 - 2 * r;
+        drawCircle(xc, yc, x, y);
+        while (y >= x) {
+            // for each pixel we will
+            // draw all eight pixels
+            x++;
+            // check for decision parameter
+            // and correspondingly
+            // update d, x, y
+            if (d > 0) {
+                y--;
+                d = d + 4 * (x - y) + 10;
+            } else {
+                d = d + 4 * x + 6;
+            }
+            drawCircle(xc, yc, x, y);
+        }
     }
 }

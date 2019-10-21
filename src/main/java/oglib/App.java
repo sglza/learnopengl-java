@@ -29,6 +29,7 @@ import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
 public class App {
+
     public static void main(String[] args) {
         var gameState = GameState.getGameState();
         var width = 300;
@@ -38,10 +39,34 @@ public class App {
         try {
             var program = new Program("screen.vert", "screen.frag");
             var screen = new Simple2DBuffer(width, height);
-            var x = 255;
-            for (int i = 0; i < width; i++) {
-                screen.set(i, 200, x, x, x);
-            }
+
+            // x1 y1 x2 y2
+            // Simple2DBuffer.drawLine(150, 150, 150, 299); // 1
+            // Simple2DBuffer.drawLine(150, 150, 230, 299); // 2
+            // Simple2DBuffer.drawLine(150, 150, 299, 299); // 3
+            // Simple2DBuffer.drawLine(150, 150, 299, 230); // 4
+            // Simple2DBuffer.drawLine(150, 150, 299, 150); // 5
+            //// negative slopDDA
+            // Simple2DBuffer.drawLine(150, 150, 299, 70); // 6
+            // Simple2DBuffer.drawLine(150, 150, 299, 1); // 7 slope = -1
+            // Simple2DBuffer.drawLine(150, 150, 230, 0); // 8
+            // Simple2DBuffer.drawLine(150, 150, 150, 0); // 9
+            //
+            // Simple2DBuffer.drawLine(150, 150, 70, 0); // 10
+            // Simple2DBuffer.drawLine(150, 150, 0, 0); // 11
+            // Simple2DBuffer.drawLine(150, 150, 0, 70); // 12
+            // Simple2DBuffer.drawLine(150, 150, 0, 150); // 13
+            // Simple2DBuffer.drawLine(150, 150, 0, 230); // 14
+            // Simple2DBuffer.drawLine(150, 150, 0, 299); // 15
+            // Simple2DBuffer.drawLine(150, 150, 70, 299); // 16
+
+            Simple2DBuffer.DDA(150, 0, 151, 299);
+
+            // Simple2DBuffer.DDA(0, 0, 299, 299);
+            // Simple2DBuffer.circle(150, 150, 0);
+            // Simple2DBuffer.drawLine(151, 0, 150, 299);
+            // Simple2DBuffer.drawLine(250, 250, 350, 0);
+
             while (!w.windowShouldClose()) {
                 glClearColor(0f, 0f, 0f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

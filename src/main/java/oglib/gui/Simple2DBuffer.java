@@ -175,9 +175,28 @@ public class Simple2DBuffer {
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
     }
 
+    /**
+     * Esta función utiliza el algoritmo de Bresenham para trazar una línea, el
+     * algorítmo está diseñado para recibir la coordenada de dos puntos donde x1 <
+     * x2 & y1 < y2 y se dibuja la línea de izquierda a derecha. Para solucionar
+     * esto se implementó una condición que revise el orden de los puntos, y de ser
+     * incorrecto se invierten.
+     * 
+     * Cuando la pendiente es mayor a 0 y menor a 1 se tiene que decidir si el
+     * siguiente punto a dibujar se hará como (X + 1, Y) o (X + 1, Y + 1). Lo que
+     * busca Bresenham es evitar las operaciones con números flotantes, y para no
+     * usar la ecuación de la lína recta y = Math.round(mx + c) se utiliza un
+     * parámetro para llevar seguimiento del error y cuando el error sobrepasa un
+     * límite indicado por (slope_error * (x2 – x1) * 2) entonces se dibuja el punto
+     * (X + 1, Y + 1)
+     * 
+     * El algoritmo trabaja diferente dependiendo de la pendiente de la línea que se
+     * esté dibujando. Cuando la pendiente es mayor a 1 o menor a -1 la variable que
+     * cambia constantemente es Y mientras que X incrementará de manera
+     * intermitente, por lo que el error se calcula con respecto a Y en lugar de X.s
+     */
     public static void myDrawLine(int x1, int y1, int x2, int y2) {
 
-        // var width must be equal to the width of the screen size
         var width = 299;
         int m_new;
         int slope_error_new;
@@ -191,8 +210,6 @@ public class Simple2DBuffer {
         } else {
 
             if (x1 > x2) {
-                // To graph from right to left:
-                // switch p1 & p2 with each other and graph normally
                 var tempX = x2;
                 x2 = x1;
                 x1 = tempX;
@@ -200,86 +217,71 @@ public class Simple2DBuffer {
                 var tempY = y2;
                 y2 = y1;
                 y1 = tempY;
-
             }
 
             if (slope >= 0 && slope <= 1) {
-                // System.out.println("Slope >= 0 && <= 1");
-                // When the slope is
                 m_new = 2 * (y2 - y1);
                 slope_error_new = m_new - (x2 - x1);
                 for (int x = x1, y = y1; x <= x2; x++) {
-                    // System.out.print("(" +x + "," + y + ")\n");
                     set(x, y, 255, 255, 255);
-                    // Add slope to increment angle formed
                     slope_error_new += m_new;
-                    // System.out.println(slope_error_new);
-                    // Slope error reached limit, time to
-                    // increment 'Y' and update slope error.
                     if (slope_error_new >= 0) {
                         y++;
                         slope_error_new -= 2 * (x2 - x1);
-                        // System.out.println(slope_error_new);
                     }
                 }
             } else if (slope > 1) {
-                // System.out.println("Slope > 1");
-                m_new = 2 * (x2 - x1); // 500
-                slope_error_new = m_new - (y2 - y1); // 450
+                m_new = 2 * (x2 - x1);
+                slope_error_new = m_new - (y2 - y1);
                 for (int x = x1, y = y1; y <= y2; y++) {
-                    // System.out.print("(" +x + "," + y + ")\n");
                     set(x, y, 255, 255, 255);
-                    // Add slope to increment angle formed
                     slope_error_new += m_new;
-                    // System.out.println(slope_error_new);
-                    // Slope error reached limit, time to
-                    // increment 'Y' and update slope error.
+
                     if (slope_error_new >= 0) {
                         x++;
                         slope_error_new -= 2 * (y2 - y1);
-                        // System.out.println(slope_error_new);
                     }
                 }
             } else if (slope < 0 && slope >= -1) {
-                // System.out.println("Slope < 0 && >= -1");
                 m_new = -1 * (2 * (y2 - y1));
                 slope_error_new = m_new - (x2 - x1);
                 for (int x = x1, y = y1; x <= x2; x++) {
-                    // System.out.print("(" +x + "," + y + ")\n");
                     set(x, y, 255, 255, 255);
-                    // Add slope to increment angle formed
                     slope_error_new += m_new;
-                    // System.out.println(slope_error_new);
-                    // Slope error reached limit, time to
-                    // increment 'Y' and update slope error.
                     if (slope_error_new >= 0) {
                         y--;
                         slope_error_new -= 2 * (x2 - x1);
-                        // System.out.println(slope_error_new);
                     }
                 }
             } else if (slope < -1) {
-                // System.out.println("Slope < -1");
                 m_new = -1 * (2 * (x2 - x1)); // 500
                 slope_error_new = m_new - (y2 - y1); // 450
                 for (int x = x1, y = y1; y >= y2; y--) {
-                    // System.out.print("(" +x + "," + y + ")\n");
                     set(x, y, 255, 255, 255);
-                    // Add slope to increment angle formed
                     slope_error_new += m_new;
-                    // System.out.println(slope_error_new);
-                    // Slope error reached limit, time to
-                    // increment 'Y' and update slope error.
                     if (slope_error_new <= 0) {
                         x++;
                         slope_error_new -= 2 * (y2 - y1);
-                        // System.out.println(slope_error_new);
                     }
                 }
             }
         }
     }
 
+    /***
+     * Esta es la función que utiliza el algorítmo DDA, la cual no cuenta con
+     * errores al dibujar ningun tipo de línea.
+     * 
+     * Este algoritmo calcula el número de pixeles que se tienen que trazar, lo cual
+     * dependerá de la pendiente y el tamaño que tenga la línea Además se calcula el
+     * incremento promedio que existe por cada pixel de la línea, debido a que no se
+     * puede dibujar pixeles en posiciones flotantes este incremento se suma a la
+     * coordenada X y Y, redondeandolo al entero más cercano.
+     * 
+     * A diferencia del algorítmo de Bresenham, aquí se incrementa tanto X como Y
+     * simultaneamente sin importar si el número incrementa al ser redondeado al
+     * entero más cercano o no.
+     */
     public static void drawLine(int x1, int y1, int x2, int y2) {
         // calculate dx & dy
         int dx = x2 - x1;
@@ -302,22 +304,29 @@ public class Simple2DBuffer {
         }
     }
 
-    public static void drawCircle(int xc, int yc, int x, int y) {
-        set(xc + x, yc + y, 255, 255, 255);
-        set(xc - x, yc + y, 255, 255, 255);
-        set(xc + x, yc - y, 255, 255, 255);
-        set(xc - x, yc - y, 255, 255, 255);
-        set(xc + y, yc + x, 255, 255, 255);
-        set(xc - y, yc + x, 255, 255, 255);
-        set(xc + y, yc - x, 255, 255, 255);
-        set(xc - y, yc - x, 255, 255, 255);
-    }
-
-    public static void circle(int xc, int yc, int r) {
+    /**
+     * EL algorítmo de Bresenham para trazar un círculo trata de aprovechar la
+     * simetría del círculo, dividiendo los 360 grados en 8 partes iguales de 45
+     * grados. Así que para cada punto que se coloca en el primer octante, este se
+     * vera reflejado respectivamente en cada uno de los otros 7 sectores del
+     * círculo. Es decir, por cada punto colocado en (x, y) se colocará reflejado
+     * en:
+     * 
+     * (y, x), (-y, x), (-x, y), (-x, -y), (-y, -x), (y, -x), (x, -y)
+     * 
+     * Lo que sigue es conocer la dirección hacia la que será dibujado el siguiente
+     * pixel, para eso se calcula un parámetro d (calculado como d = 3 - (2 * r)) y
+     * se revisa si es igual a 0, de ser así el siguiente punto se moverá hacia
+     * abajo como (x + 1, y - 1), de otra forma el siguiente punto se moverá de
+     * forma horizontal en (x + 1, y)
+     * 
+     * 
+     */
+    public static void drawCircle(int xc, int yc, int r) {
         var x = 0;
         var y = r;
         var d = 3 - 2 * r;
-        drawCircle(xc, yc, x, y);
+        circle(xc, yc, x, y);
         while (y >= x) {
             // for each pixel we will
             // draw all eight pixels
@@ -331,7 +340,18 @@ public class Simple2DBuffer {
             } else {
                 d = d + 4 * x + 6;
             }
-            drawCircle(xc, yc, x, y);
+            circle(xc, yc, x, y);
         }
+    }
+
+    public static void circle(int xc, int yc, int x, int y) {
+        set(xc + x, yc + y, 255, 255, 255);
+        set(xc - x, yc + y, 255, 255, 255);
+        set(xc + x, yc - y, 255, 255, 255);
+        set(xc - x, yc - y, 255, 255, 255);
+        set(xc + y, yc + x, 255, 255, 255);
+        set(xc - y, yc + x, 255, 255, 255);
+        set(xc + y, yc - x, 255, 255, 255);
+        set(xc - y, yc - x, 255, 255, 255);
     }
 }

@@ -183,17 +183,15 @@ public class Simple2DBuffer {
      * incorrecto se invierten.
      * 
      * Cuando la pendiente es mayor a 0 y menor a 1 se tiene que decidir si el
-     * siguiente punto a dibujar se hará como (X + 1, Y) o (X + 1, Y + 1). Lo que
-     * busca Bresenham es evitar las operaciones con números flotantes, y para no
-     * usar la ecuación de la lína recta y = Math.round(mx + c) se utiliza un
-     * parámetro para llevar seguimiento del error y cuando el error sobrepasa un
-     * límite indicado por (slope_error * (x2 – x1) * 2) entonces se dibuja el punto
-     * (X + 1, Y + 1)
+     * siguiente punto a dibujar se hará como (X + 1, Y) o (X + 1, Y + 1), esto es
+     * porque la coordenada X estará cambiando constantemente mientras que la
+     * coordenada Y solo incrementará de manera intermitente.
      * 
-     * El algoritmo trabaja diferente dependiendo de la pendiente de la línea que se
-     * esté dibujando. Cuando la pendiente es mayor a 1 o menor a -1 la variable que
-     * cambia constantemente es Y mientras que X incrementará de manera
-     * intermitente, por lo que el error se calcula con respecto a Y en lugar de X.s
+     * Esta dinámica cambia según la pendiente de la línea, el algoritmo trabaja
+     * diferente dependiendo de la pendiente de la línea que se esté dibujando.
+     * Cuando la pendiente es mayor a 1 o menor a -1 la variable que cambia
+     * constantemente es Y mientras que X incrementará de manera intermitente, por
+     * lo que el error se calcula con respecto a Y en lugar de X.
      */
     public static void myDrawLine(int x1, int y1, int x2, int y2) {
 
@@ -254,8 +252,8 @@ public class Simple2DBuffer {
                     }
                 }
             } else if (slope < -1) {
-                m_new = -1 * (2 * (x2 - x1)); // 500
-                slope_error_new = m_new - (y2 - y1); // 450
+                m_new = -1 * (2 * (x2 - x1));
+                slope_error_new = m_new - (y2 - y1);
                 for (int x = x1, y = y1; y >= y2; y--) {
                     set(x, y, 255, 255, 255);
                     slope_error_new += m_new;
@@ -269,8 +267,8 @@ public class Simple2DBuffer {
     }
 
     /***
-     * Esta es la función que utiliza el algorítmo DDA, la cual no cuenta con
-     * errores al dibujar ningun tipo de línea.
+     * Esta es la función que utiliza el algorítmo DDA, y funciona correctamente en
+     * .todos los escenarios.
      * 
      * Este algoritmo calcula el número de pixeles que se tienen que trazar, lo cual
      * dependerá de la pendiente y el tamaño que tenga la línea Además se calcula el
@@ -283,24 +281,22 @@ public class Simple2DBuffer {
      * entero más cercano o no.
      */
     public static void drawLine(int x1, int y1, int x2, int y2) {
-        // calculate dx & dy
+
         int dx = x2 - x1;
         int dy = y2 - y1;
 
-        // calculate steps required for generating pixels
         int steps = Math.abs(dx) > Math.abs(dy) ? Math.abs(dx) : Math.abs(dy);
 
-        // calculate increment in x & y for each steps
         float Xinc = dx / (float) steps;
         float Yinc = dy / (float) steps;
 
-        // Put pixel for each step
         float X = x1;
         float Y = y1;
+
         for (int i = 0; i <= steps; i++) {
-            set(Math.round(X), Math.round(Y), 255, 255, 255); // put pixel at (X,Y)
-            X += Xinc; // increment in x at each step
-            Y += Yinc; // increment in y at each step
+            set(Math.round(X), Math.round(Y), 255, 255, 255);
+            X += Xinc;
+            Y += Yinc;
         }
     }
 
@@ -309,17 +305,17 @@ public class Simple2DBuffer {
      * simetría del círculo, dividiendo los 360 grados en 8 partes iguales de 45
      * grados. Así que para cada punto que se coloca en el primer octante, este se
      * vera reflejado respectivamente en cada uno de los otros 7 sectores del
-     * círculo. Es decir, por cada punto colocado en (x, y) se colocará reflejado
-     * en:
+     * círculo.
      * 
-     * (y, x), (-y, x), (-x, y), (-x, -y), (-y, -x), (y, -x), (x, -y)
+     * El siguiente paso es conocer la dirección hacia la que será dibujado el
+     * siguiente pixel, para eso se calcula un parámetro d y se revisa si este es
+     * igual a 0, de ser así el siguiente punto se moverá hacia abajo como
      * 
-     * Lo que sigue es conocer la dirección hacia la que será dibujado el siguiente
-     * pixel, para eso se calcula un parámetro d (calculado como d = 3 - (2 * r)) y
-     * se revisa si es igual a 0, de ser así el siguiente punto se moverá hacia
-     * abajo como (x + 1, y - 1), de otra forma el siguiente punto se moverá de
-     * forma horizontal en (x + 1, y)
+     * (x + 1, y - 1)
      * 
+     * De otra forma el siguiente punto se moverá de forma horizontal creciendo en
+     * el eje x. El algorítmo se repite hasta haber completado de dibujar un
+     * octante, y por consecuente habiendo dibujado todo el círculo.
      * 
      */
     public static void drawCircle(int xc, int yc, int r) {
@@ -328,12 +324,7 @@ public class Simple2DBuffer {
         var d = 3 - 2 * r;
         circle(xc, yc, x, y);
         while (y >= x) {
-            // for each pixel we will
-            // draw all eight pixels
             x++;
-            // check for decision parameter
-            // and correspondingly
-            // update d, x, y
             if (d > 0) {
                 y--;
                 d = d + 4 * (x - y) + 10;
